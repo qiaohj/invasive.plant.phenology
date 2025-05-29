@@ -17,13 +17,13 @@ allvars<-c("2m_dewpoint_temperature",
            "volumetric_soil_water_layer_2",
            "volumetric_soil_water_layer_3",
            "volumetric_soil_water_layer_4")
-allvars<-c("2m_temperature",
-           "skin_reservoir_content"
+allvars<-c("2m_temperature", "skin_reservoir_content"
            )
 allvar1<-c("daily_mean", "daily_minimum", "daily_maximum")
+var2<-"2m_temperature"
 for (var in c("daily_mean")){
   for (var2 in allvars){
-    for (year in c(2010:2017)){
+    for (year in c(1950:2024)){
       for (month in c(1:12)){
         
         print(paste(year, month, var, var2))
@@ -32,6 +32,7 @@ for (var in c("daily_mean")){
         if (file.exists(sprintf("/media/huijieqiao/WD22T_11/CDS/%s", target))){
           next()
         }
+        asdf
         request <- list(
           dataset_short_name = dataset_short_name,
           #product_type   = "reanalysis",
@@ -58,7 +59,7 @@ for (var in c("daily_mean")){
           download_format= "zip"
         )
         
-        wf_request(request, user =user, path="/media/huijieqiao/WD22T_11/CDS/")
+        #wf_request(request, user =user, path="/media/huijieqiao/WD22T_11/CDS/")
       }
     }
   }
