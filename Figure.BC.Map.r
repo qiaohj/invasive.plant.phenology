@@ -312,6 +312,7 @@ t.test.species<-ggplot(all.species.df)+
   facet_wrap(~phenology)
 t.test.species
 
-combined_plot <- p + bar + t.test.species + plot_layout(ncol = 3, widths = c(6, 1, 8))
+combined_plot <- p + bar + t.test.species + plot_layout(ncol = 3, 
+                                                        widths = c(6, 1, 8))
 combined_plot
 
