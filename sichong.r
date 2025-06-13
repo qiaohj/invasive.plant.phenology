@@ -12,7 +12,8 @@ library(broom)
 library(kableExtra)
 
 setwd("/media/huijieqiao/WD22T_11/invasive.plant.phenology/invasive.plant.phenology")
-iNadata <- read_csv("../Data/Similar_phenology_invasive_code&data_20250218/iNadata.csv")
+iNadata <- read_csv("../Data/Similar_phenology_invasive_code&data_20250218/iNadata.csv") 
+iNadata[which(iNadata$id==548648),]
 glimpse(iNadata)
 
 #Select species with penological information

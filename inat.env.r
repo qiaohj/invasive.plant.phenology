@@ -45,7 +45,7 @@ if (F){
   
   chunks <- split(ids, ceiling(seq_along(ids) / 200))
   
-  for (ii in c(1:length(chunks))) {
+  for (ii in c(419:length(chunks))) {
     chunk<-chunks[[ii]]
     print(paste(ii, length(chunks)))
     id_str <- paste(chunk, collapse = ",")
@@ -60,9 +60,19 @@ if (F){
     json <- fromJSON(content(resp, "text", encoding = "UTF-8"))
     
     if (length(json$results) == 0) next
+    locs<-list()
+    for (i in c(1:length(json$results$id))){
+      id<-json$results$id[i]
+      loc<-json$results$geojson$coordinates[[i]]
+      if (length(loc)!=2){
+        next()
+      }
+      loc.item<-data.table(lon=loc[1], lat=loc[2], id=id)
+      locs[[length(locs)+1]]<-loc.item
+    }
     
-    ll <- rbindlist(lapply(json$results$geojson$coordinates, function(x) data.table(lon = x[1], lat = x[2])))
-    ll$id<-json$results$id
+    ll <- rbindlist(locs)
+    
     
     
     results[[length(results) + 1]] <- ll
@@ -70,6 +80,16 @@ if (F){
   
   lll<-rbindlist(results, fill = TRUE)
   
+  iNadata_ll<-merge(iNadata_ll, lll, by="id", all.x=T)
+  n<-iNadata_ll[, .(N=.N), by=c("id")]
+  n[N>1]
+  iNadata_ll<-unique(iNadata_ll)
+  iNadata_ll[is.na(decimalLongitude), decimalLongitude:=iNadata_ll[is.na(decimalLongitude)]$lon]
+  iNadata_ll[is.na(decimalLatitude), decimalLatitude:=iNadata_ll[is.na(decimalLatitude)]$lat]
+  iNadata_ll$lon<-NULL
+  iNadata_ll$lat<-NULL
+  iNadata_ll[id==548648]
+  iNadata_ll[is.na(decimalLongitude)]
   saveRDS(iNadata_ll, "../Data/iNadata_ll.rda")
 }
 iNadata_ll<-readRDS("../Data/iNadata_ll.rda")
