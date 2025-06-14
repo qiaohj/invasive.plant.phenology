@@ -316,3 +316,17 @@ combined_plot <- p + bar + t.test.species + plot_layout(ncol = 3,
                                                         widths = c(6, 1, 8))
 combined_plot
 
+library(ggalluvial)
+
+alluv.df<-paired.differ[,.(N=.N), by=.(e.invasive, e.bot_country, n.scientific_name)]
+
+ggplot(alluv.df, aes(axis1 = e.bot_country,
+               axis2 = e.invasive,
+               axis3 = n.scientific_name,
+               y = N)) +
+  geom_alluvium(aes(fill = e.invasive), width = 1/12, alpha = 0.7) +
+  geom_stratum(width = 1/12, fill = "grey90", color = "black") +
+  geom_text(stat = "stratum", aes(label = after_stat(stratum)), size = 3) +
+  scale_x_discrete(limits = c("Invasive Species", "Country", "Native Species"), expand = c(.05, .05)) +
+  theme(legend.position = "none")
+
