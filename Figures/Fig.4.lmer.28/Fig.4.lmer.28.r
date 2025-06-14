@@ -1,10 +1,7 @@
-library(data.table)
-library(ggplot2)
-library(patchwork)
-library(sf)
 library(lme4)
-library(performance)
-
+library(ggplot2)
+library(data.table)
+library(ggeffects)
 setwd("/media/huijieqiao/WD22T_11/invasive.plant.phenology/invasive.plant.phenology")
 dist=10
 paired.records.filtered<-readRDS(sprintf("../Data/paired.records.clean.%dkm.rda", dist))
@@ -29,10 +26,12 @@ DT<-data.table(e.id=paired.records.filtered$e.id,
 
 conditions<-data.table(expand.grid(type=unique(DT$type),
                                    e.days=unique(DT$e.days)))
+conditions<-conditions[e.days==28 & type=="2m_temperature"]
 coms<-data.table(expand.grid(phenology=c("Flowering", "Fruiting"),
-                             growthform=c("All", "Herbaceous", "Woody")))
-j=25
-cor.all<-list()
+                             growthform=c("Herbaceous", "Woody")))
+j=1
+point.data.all<-list()
+line.data.all<-list()
 for (j in c(1:nrow(conditions))){
   cond<-conditions[j]
   if (cond$type!="Both"){
@@ -69,26 +68,78 @@ for (j in c(1:nrow(conditions))){
     cor(item.paired.differ[, c("sd", "accu_temp", "min", "max", "range", "mean")])
     
     item.paired.differ$lat<-scale(abs(item.paired.differ$decimalLatitude))
-   
-    model <- lmer(pheno_arc ~ accu_temp + sd (1 | bot_country), 
+    
+    model <- lmer(pheno_arc ~ accu_temp + sd + (1 | bot_country), 
                   data = item.paired.differ)
     check_collinearity(model)
     
     r2<-r2(model)
-    result<-summary(model)
-    a<-data.table(result$coefficients)
-    a$var<-c("intercept", "accu_temp", "sd")
-    a$R2_conditional<-r2$R2_conditional
-    a$R2_marginal<-r2$R2_marginal
-    a$type<-cond$type
-    a$e.days<-cond$e.days
-    a$phenology<-com$phenology
-    a$growthform<-com$growthform
     
-    cor.all[[length(cor.all)+1]]<-a
+    pred_effects.sd <- ggpredict(model, terms = c("sd"),
+                              condition = c(accu_temp = mean(item.paired.differ$accu_temp)))
+    line.data.sd<-data.table(var="sd", x=pred_effects.sd$x, y=pred_effects.sd$predicted,
+                             ci.low=pred_effects.sd$conf.low, ci.high=pred_effects.sd$conf.high)
     
+    pred_effects.accu_temp <- ggpredict(model, terms = c("accu_temp"),
+                                 condition = c(sd = mean(item.paired.differ$sd)))
+    line.data.accu_temp<-data.table(var="accu_temp", x=pred_effects.accu_temp$x, y=pred_effects.accu_temp$predicted,
+                             ci.low=pred_effects.accu_temp$conf.low, ci.high=pred_effects.accu_temp$conf.high)
+    
+    
+    line.data <- rbindlist(list(line.data.sd, line.data.accu_temp))
+    sample.size<-ifelse(nrow(item.paired.differ)>1e3, 1e3, nrow(item.paired.differ))
+    point.data<-item.paired.differ[sample(nrow(item.paired.differ), sample.size)]
+    
+    point.data.sd<-point.data[, c("sd", "pheno_arc")]
+    colnames(point.data.sd)<-c("x", "y")
+    point.data.sd$var<-"sd"
+    
+    point.data.accu_temp<-point.data[, c("accu_temp", "pheno_arc")]
+    colnames(point.data.accu_temp)<-c("x", "y")
+    point.data.accu_temp$var<-"accu_temp"
+    point.data<-rbindlist(list(point.data.sd, point.data.accu_temp))
+    
+    point.data$type<-cond$type
+    point.data$phenology<-com$phenology
+    point.data$growthform<-com$growthform
+    point.data.all[[length(point.data.all)+1]]<-point.data
+    
+    line.data$type<-cond$type
+    line.data$phenology<-com$phenology
+    line.data$growthform<-com$growthform
+    line.data.all[[length(line.data.all)+1]]<-line.data
+    
+    if (F){
+      ggplot(point.data, aes(x = x, y = y)) +
+        geom_point(data=point.data, alpha = 0.2, color = "gray40") +
+        geom_line(
+          data = line.data,
+          color = "deepskyblue3",
+          linewidth = 1.2
+        ) +
+        facet_wrap(~ var, scales = "free_x") +
+        theme(
+          strip.background = element_rect(fill = "gray85"),
+          strip.text = element_text(face = "bold")
+        )
+    }
   }
 }
-cor.df<-rbindlist(cor.all)
+line.data.df[var=="sd" & phenology=="Flowering" & growthform=="Herbaceous"]
 
-saveRDS(cor.df, "../Figures/Fig.3.t.test.BC/lmer.rda")
+line.data.df<-rbindlist(line.data.all)
+point.data.df<-rbindlist(point.data.all)
+ggplot(point.data.df, aes(x = x, y = y)) +
+  geom_point(data=point.data.df, alpha = 0.1, color = "gray40") +
+  geom_ribbon(data = line.data.df, aes(x=x, ymin=ci.low, ymax=ci.high), 
+              fill="deepskyblue3", alpha=0.3)+
+  geom_line(
+    data = line.data.df,
+    color = "deepskyblue3",
+    linewidth = 1
+  ) +
+  facet_grid(phenology+growthform~ var+type, scales = "free") +
+  theme(
+    strip.background = element_rect(fill = "gray85"),
+    strip.text = element_text(face = "bold")
+  )

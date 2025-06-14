@@ -6,7 +6,7 @@ library(lme4)
 library(performance)
 
 setwd("/media/huijieqiao/WD22T_11/invasive.plant.phenology/invasive.plant.phenology")
-cor.df<-readRDS("../Figures/Fig.3.t.test.BC/lmer.rda")
+cor.df<-readRDS("../Figures/Fig.3.lmer.BC/lmer.rda")
 cor.df<-cor.df[var!="intercept" & type=="2m_temperature"]
 cor.df[e.days==90, e.days:=91]
 e.days_levels <- unique(cor.df$e.days)
@@ -46,10 +46,27 @@ p <- ggplot(
   ) +
   geom_text(
     aes(label = round(R2_conditional, 2)), 
-    color = "black",
-    size = 3
+    color = "black"
   )+
 
+  facet_grid(growthform ~ phenology) +
+  scale_fill_gradient2(
+    low = "deepskyblue4", 
+    mid = "white", 
+    high = "firebrick", 
+    midpoint = 0,
+    name = "Slope"
+  ) +
+  #coord_equal()+
+  theme(
+    legend.position = "right" 
+  )
+
+p <- ggplot(
+  data = cor.df,
+  aes(x = e.days, y = var, fill = Estimate)
+) +
+  geom_tile(color = "white", linewidth = 0.5) +
   facet_grid(growthform ~ phenology) +
   scale_fill_gradient2(
     low = "deepskyblue4", 
@@ -63,8 +80,34 @@ p <- ggplot(
     legend.position = "right" 
   )
 p
+ggsave(p, filename="../Figures/Fig.3.lmer.BC/Fig.3.lmer.png", width=12, height=6)
 
-cor.df<-readRDS("../Figures/Fig.3.t.test.BC/lmer.rda")
+p <- ggplot(
+  data = cor.df[e.days==28 & growthform!="All"],
+  aes(x = e.days, y = var, fill = Estimate)
+) +
+  geom_tile(color = "white", linewidth = 0.5) +
+  facet_grid(growthform ~ phenology) +
+  scale_fill_gradient2(
+    low = "deepskyblue4", 
+    mid = "white", 
+    high = "firebrick", 
+    midpoint = 0,
+    name = "Slope"
+  ) +
+  geom_text(
+    aes(label = round(Estimate, 2)), 
+    color = "black"
+  )+
+  coord_equal()+
+  theme(
+    legend.position = "right" 
+  )
+p
+ggsave(p, filename="../Figures/Fig.3.lmer.BC/Fig.3.slope.png", width=12, height=6)
+
+
+cor.df<-readRDS("../Figures/Fig.3.lmer.BC/lmer.rda")
 
 ggplot(cor.df[var=="sd"])+
   geom_point(aes(x=e.days, y=R2_conditional, color=type))+
