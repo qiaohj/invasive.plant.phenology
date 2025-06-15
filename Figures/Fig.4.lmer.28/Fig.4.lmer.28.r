@@ -129,7 +129,7 @@ line.data.df[var=="sd" & phenology=="Flowering" & growthform=="Herbaceous"]
 
 line.data.df<-rbindlist(line.data.all)
 point.data.df<-rbindlist(point.data.all)
-ggplot(point.data.df, aes(x = x, y = y)) +
+p<-ggplot(point.data.df, aes(x = x, y = y)) +
   geom_point(data=point.data.df, alpha = 0.1, color = "gray40") +
   geom_ribbon(data = line.data.df, aes(x=x, ymin=ci.low, ymax=ci.high), 
               fill="deepskyblue3", alpha=0.3)+
@@ -143,3 +143,4 @@ ggplot(point.data.df, aes(x = x, y = y)) +
     strip.background = element_rect(fill = "gray85"),
     strip.text = element_text(face = "bold")
   )
+ggsave(p, filename="../Figures/Fig.4.lmer.28/Fig.4.lmer.28.png", width=6, height=8)
